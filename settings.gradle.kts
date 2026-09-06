@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ws-market-client"
 include(":wsclient")
+include(":sample")
