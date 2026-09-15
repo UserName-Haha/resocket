@@ -313,6 +313,23 @@ class RealWsClientTest {
         client.close()
     }
 
+    @Test
+    fun `建立连接时抛出的任何异常都按连接失败处理，不会让客户端停摆`() = runTest {
+        val client = client()
+        transport.connectError = IllegalStateException("token not ready")
+        client.connect()
+        runCurrent()
+        assertEquals(1, (client.state.value as ConnectionState.WaitingToReconnect).attempt)
+        assertEquals("configureRequest", events<WsEvent.CallbackFailed>().single().name)
+
+        transport.connectError = null
+        advanceTimeBy(1.seconds + 1.milliseconds)
+        transport.latest.open()
+        runCurrent()
+        assertSame(ConnectionState.Connected, client.state.value)
+        client.close()
+    }
+
     // endregion
 
     // region 订阅

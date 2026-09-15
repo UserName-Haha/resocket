@@ -106,8 +106,9 @@ public interface WsClient : Closeable {
 - 握手未完成时 `disconnect()`：直接取消连接，不走关闭握手。
 - 服务端发起关闭：回 close 帧完成握手，同时立刻按断开处理，不等 `onClosed`（对端不配合的话 OkHttp 要 60 秒后才回调）。
 - 订阅消息发送失败：发 `SendFailed` 事件，订阅仍然登记在册，下次重连后恢复。
-- `topicOf`、`autoReply`、`binaryDecoder`、url 函数、重连策略抛异常：发 `CallbackFailed` 事件；
-  消息仍会出现在 `messages` 里，url 取不到按连接失败处理，策略出错按放弃重连处理。
+- 接入方提供的回调（`topicOf`、`autoReply`、`binaryDecoder`、`greeting`、url 函数、`configureRequest`、重连策略）抛异常：
+  发 `CallbackFailed` 事件；消息仍会出现在 `messages` 里，url 和 `configureRequest` 出错按一次连接失败处理（走退避），
+  策略出错按放弃重连处理。
 - 收集者被取消时缓冲区里剩下的消息不算丢弃。
 - `close()` 之后所有 Flow 正常结束，其余方法不再有效果；之后再 `subscribe` 得到的 Flow 立即结束。
 

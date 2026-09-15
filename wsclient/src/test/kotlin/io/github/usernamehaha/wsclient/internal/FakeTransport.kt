@@ -6,9 +6,11 @@ import okio.ByteString
 internal class FakeTransport : Transport {
     val connections = CopyOnWriteArrayList<FakeConnection>()
     val latest: FakeConnection get() = connections.last()
+    var connectError: Exception? = null
 
     override fun connect(url: String, listener: TransportListener): Connection {
         require(url.startsWith("ws")) { "不合法的 url：$url" }
+        connectError?.let { throw it }
         return FakeConnection(url, listener).also { connections += it }
     }
 }

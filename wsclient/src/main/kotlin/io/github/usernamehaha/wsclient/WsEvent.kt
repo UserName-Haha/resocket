@@ -54,7 +54,7 @@ public sealed interface WsEvent {
         override fun toString(): String = "${topic ?: "messages"} 的收集者处理不过来，丢弃了 $count 条消息"
     }
 
-    /** [WsConfig.topicOf]、[WsConfig.autoReply]、[WsConfig.binaryDecoder] 或 url 提供者抛了异常。 */
+    /** 接入方提供的回调抛了异常，[name] 是 [WsConfig] 里对应的配置项名字。 */
     public class CallbackFailed(public val name: String, public val cause: Throwable) : WsEvent {
         override fun toString(): String = "$name 抛出异常：$cause"
     }

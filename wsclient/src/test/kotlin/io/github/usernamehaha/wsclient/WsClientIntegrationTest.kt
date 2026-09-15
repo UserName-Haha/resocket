@@ -127,6 +127,18 @@ class WsClientIntegrationTest {
     }
 
     @Test
+    fun `configureRequest 抛异常时进入重连，而不是让客户端停摆`(): Unit = runBlocking {
+        val client = WsClient.create(okHttpClient) {
+            url(server.url("/ws").toString().replaceFirst("http", "ws"))
+            configureRequest = { error("token not ready") }
+        }
+        client.connect()
+        withTimeout(5.seconds) { client.state.first { it is ConnectionState.WaitingToReconnect } }
+        client.close()
+        withTimeout(5.seconds) { client.state.first { it == ConnectionState.Closed } }
+    }
+
+    @Test
     fun `没有配置 url 时创建失败`() {
         assertThrows(IllegalArgumentException::class.java) { WsClient.create(okHttpClient) { } }
     }

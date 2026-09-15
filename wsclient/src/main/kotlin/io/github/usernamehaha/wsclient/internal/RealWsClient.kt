@@ -149,6 +149,16 @@ internal class RealWsClient(
     }
 
     private suspend fun run() {
+        try {
+            processCommands()
+        } finally {
+            // 正常走到这里是 close()。万一处理命令时出了没预料到的异常，也要把所有 Flow 结束掉，
+            // 不能留下一个不再消费命令、收集者永远挂起的客户端；异常本身继续向上抛
+            shutDown()
+        }
+    }
+
+    private suspend fun processCommands() {
         for (command in commands) {
             when (command) {
                 Command.Connect -> if (!wanted) {
@@ -171,7 +181,6 @@ internal class RealWsClient(
                 Command.Close -> break
             }
         }
-        shutDown()
     }
 
     // region 连接
@@ -190,7 +199,9 @@ internal class RealWsClient(
         emit(WsEvent.Connecting(url, attempt))
         try {
             connection = transport.connect(url, ConnectionListener(current))
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
+            // url 不合法是 IllegalArgumentException；其他异常只可能来自 configureRequest
+            if (e !is IllegalArgumentException) emit(WsEvent.CallbackFailed("configureRequest", e))
             onLost(DisconnectCause.Failure(e))
         }
     }
