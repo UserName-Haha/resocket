@@ -14,8 +14,8 @@ public fun interface ReconnectPolicy {
 
     public companion object {
         /**
-         * 指数退避：第 n 次重连等待 `initialDelay * multiplier^(n-1)`，不超过 [maxDelay]，
-         * 再乘以 `1 ± jitter` 范围内的随机系数。
+         * 指数退避：第 n 次重连等待 `initialDelay * multiplier^(n-1)`，乘以 `1 ± jitter` 范围内的随机系数，
+         * 结果不超过 [maxDelay]。
          *
          * 抖动是为了避免服务端重启后所有客户端在同一时刻连回来。
          *
@@ -48,7 +48,8 @@ public fun interface ReconnectPolicy {
                 val factor = Math.pow(multiplier, (attempt - 1).coerceAtLeast(0).toDouble())
                 val base = if (factor.isInfinite() || initialDelay * factor > maxDelay) maxDelay else initialDelay * factor
                 val scale = if (jitter == 0.0) 1.0 else 1.0 + (random.nextDouble() * 2 - 1) * jitter
-                base * scale
+                // 抖动之后再封一次顶：调用方配置 maxDelay 时期望的是一个硬上限
+                (base * scale).coerceAtMost(maxDelay)
             }
         }
 

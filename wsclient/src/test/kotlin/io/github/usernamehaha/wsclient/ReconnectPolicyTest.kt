@@ -32,12 +32,23 @@ class ReconnectPolicyTest {
     @Test
     fun `抖动让延迟落在上下浮动的范围内，而且不是常数`() {
         val policy = ReconnectPolicy.exponentialBackoff(
-            initialDelay = 10.seconds, maxDelay = 10.seconds, multiplier = 2.0, jitter = 0.2,
+            initialDelay = 10.seconds, maxDelay = 60.seconds, multiplier = 1.0, jitter = 0.2,
             maxAttempts = null, random = Random(42),
         )
         val delays = (1..200).map { policy.nextDelay(it, cause)!! }
         assertTrue(delays.all { it in 8.seconds..12.seconds })
         assertTrue(delays.max() - delays.min() > 500.milliseconds)
+    }
+
+    @Test
+    fun `抖动之后也不会超过 maxDelay`() {
+        val policy = ReconnectPolicy.exponentialBackoff(
+            initialDelay = 1.seconds, maxDelay = 30.seconds, multiplier = 2.0, jitter = 0.5,
+            maxAttempts = null, random = Random(7),
+        )
+        val delays = (1..200).map { policy.nextDelay(it, cause)!! }
+        assertTrue(delays.all { it <= 30.seconds })
+        assertTrue(delays.drop(10).any { it < 30.seconds })
     }
 
     @Test
