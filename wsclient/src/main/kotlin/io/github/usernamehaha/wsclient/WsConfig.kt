@@ -59,6 +59,14 @@ public class WsConfig internal constructor() {
     /** [WsClient.subscribe] 和 [WsClient.messages] 的默认背压策略。 */
     public var backpressure: Backpressure = Backpressure.dropOldest()
 
-    /** 不设置就完全静默。 */
-    public var listener: WsListener? = null
+    internal var listener: WsListener? = null
+
+    /**
+     * 接收库内部的事件，不设置就完全静默。
+     *
+     * 做成函数而不是属性，是因为 Kotlin 只对函数参数做 SAM 转换：这样可以直接写 `listener { event -> ... }`。
+     */
+    public fun listener(listener: WsListener) {
+        this.listener = listener
+    }
 }

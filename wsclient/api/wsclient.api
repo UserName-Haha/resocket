@@ -141,17 +141,16 @@ public final class io/github/usernamehaha/wsclient/WsConfig {
 	public final fun getConfigureRequest ()Lkotlin/jvm/functions/Function1;
 	public final fun getGreeting ()Lkotlin/jvm/functions/Function0;
 	public final fun getHeartbeat ()Lio/github/usernamehaha/wsclient/Heartbeat;
-	public final fun getListener ()Lio/github/usernamehaha/wsclient/WsListener;
 	public final fun getReconnectPolicy ()Lio/github/usernamehaha/wsclient/ReconnectPolicy;
 	public final fun getStableAfter-UwyO8pc ()J
 	public final fun getTopicOf ()Lkotlin/jvm/functions/Function1;
+	public final fun listener (Lio/github/usernamehaha/wsclient/WsListener;)V
 	public final fun setAutoReply (Lkotlin/jvm/functions/Function1;)V
 	public final fun setBackpressure (Lio/github/usernamehaha/wsclient/Backpressure;)V
 	public final fun setBinaryDecoder (Lkotlin/jvm/functions/Function1;)V
 	public final fun setConfigureRequest (Lkotlin/jvm/functions/Function1;)V
 	public final fun setGreeting (Lkotlin/jvm/functions/Function0;)V
 	public final fun setHeartbeat (Lio/github/usernamehaha/wsclient/Heartbeat;)V
-	public final fun setListener (Lio/github/usernamehaha/wsclient/WsListener;)V
 	public final fun setReconnectPolicy (Lio/github/usernamehaha/wsclient/ReconnectPolicy;)V
 	public final fun setStableAfter-LRDsOJo (J)V
 	public final fun setTopicOf (Lkotlin/jvm/functions/Function1;)V

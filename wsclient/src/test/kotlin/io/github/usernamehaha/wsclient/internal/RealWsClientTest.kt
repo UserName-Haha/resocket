@@ -9,7 +9,6 @@ import io.github.usernamehaha.wsclient.ReconnectPolicy
 import io.github.usernamehaha.wsclient.Subscription
 import io.github.usernamehaha.wsclient.WsConfig
 import io.github.usernamehaha.wsclient.WsEvent
-import io.github.usernamehaha.wsclient.WsListener
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.milliseconds
@@ -48,7 +47,7 @@ class RealWsClientTest {
             reconnectPolicy = ReconnectPolicy.exponentialBackoff(jitter = 0.0)
             // 测试消息的格式是 "topic:内容"
             topicOf = { it.substringBefore(':', "").ifEmpty { null } }
-            listener = WsListener { events += it }
+            listener { events += it }
             configure()
         }
         return RealWsClient(config, transport, testScheduler.timeSource, StandardTestDispatcher(testScheduler))
@@ -707,7 +706,7 @@ class RealWsClientTest {
 
     @Test
     fun `监听器抛异常不影响连接`() = runTest {
-        val client = client { listener = WsListener { error("listener bug") } }
+        val client = client { listener { error("listener bug") } }
         connected(client)
         assertSame(ConnectionState.Connected, client.state.value)
         client.close()
