@@ -47,7 +47,11 @@ dependencies {
 ```kotlin
 val client = WsClient.create(okHttpClient) {
     url("wss://stream.example.com/ws")
-    topicOf = { message -> /* 从消息里取出 topic，取不到返回 null */ }
+    // 从消息里取出 topic，和下面 Subscription 的 topic 对应；订阅确认、心跳应答这类消息返回 null
+    topicOf = { message ->
+        val json = JSONObject(message)
+        if (json.has("stream")) json.getString("stream") else null
+    }
 }
 client.connect()
 
@@ -66,6 +70,35 @@ viewModelScope.launch {
 默认每 15 秒一次协议层 ping，断线后从 1 秒开始指数退避重连，上限 30 秒。
 
 最低支持 Android 5.0（API 21）。依赖只有 OkHttp（4.12 及以上，兼容 5.x）和 kotlinx-coroutines。不需要额外的混淆配置。
+
+几点说明：
+
+- `WsClient` 跟着进程走，不跟着页面走：在 `Application` 或 DI 容器里创建一次，页面只决定订阅什么。
+- `subscribe` 和 `connect` 的先后顺序无所谓。连上之前登记的订阅会在连上之后按登记顺序发出。
+- 拿到的是原始消息字符串，解析放在 `map` 里做，它运行在收集者的协程上，不会拖慢连接。
+- `topicOf` 每条消息都会调用一次，而且运行在 OkHttp 的读线程上，保持轻量。消息很大、频率很高时，
+  用字符串查找取 topic 比完整解析 JSON 划算得多。
+
+### 确认它在工作
+
+库默认不输出任何日志。接入时先把事件打出来看一眼：
+
+```kotlin
+listener { event -> Log.d("WsClient", event.toString()) }
+```
+
+```
+D WsClient: 连接 wss://stream.example.com/ws
+D WsClient: 已连接 wss://stream.example.com/ws
+D WsClient: 订阅 btcusdt@trade
+D WsClient: 连接断开 wss://stream.example.com/ws：Failure(SocketException: Socket closed)
+D WsClient: 1.06s 后进行第 1 次重连
+D WsClient: 第 1 次重连 wss://stream.example.com/ws
+D WsClient: 已连接 wss://stream.example.com/ws
+D WsClient: 恢复订阅 btcusdt@trade
+```
+
+订阅了却收不到消息，多半是 `topicOf` 取出来的值和 `Subscription.topic` 对不上：收集一下 `client.messages` 看看原始消息长什么样。
 
 ## 使用
 
@@ -137,22 +170,43 @@ reconnectPolicy = ReconnectPolicy { attempt, cause ->
 
 库不监听网络状态。网络恢复或 App 回到前台时调用 `client.reconnectNow()`，跳过剩余的退避等待。
 
+### 前后台
+
+新版本的 Android 会冻结退到后台的进程，并切断它的网络。连接会在后台断开，重连也连不上，退避会一路涨到上限；
+用户回到前台时，如果什么都不做，要等当前这一轮退避走完才会重连。所以至少要在回到前台时调一次 `reconnectNow()`：
+
+```kotlin
+// 需要 androidx.lifecycle:lifecycle-process
+ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+    override fun onStart(owner: LifecycleOwner) = client.reconnectNow()
+})
+```
+
+更省电的做法是退到后台时主动 `disconnect()`，回来再 `connect()`。订阅关系会保留，收集者不会结束，重新连上后自动恢复：
+
+```kotlin
+override fun onStart(owner: LifecycleOwner) = client.connect()
+override fun onStop(owner: LifecycleOwner) = client.disconnect()
+```
+
 ### 其他配置
 
 ```kotlin
 WsClient.create(okHttpClient) {
-    url { autoHost.rewrite("wss://ws.example.com/stream") }   // 每次连接前调用，可以在这里换线路或带上新的签名
+    // 每次连接前调用，可以在这里换线路或带上新的签名。autoHost 来自 https://github.com/UserName-Haha/autohost
+    url { autoHost.rewrite("wss://ws.example.com/stream") }
     greeting = { listOf(buildLoginMessage()) }                // 每次连上后、恢复订阅之前发送
     binaryDecoder = { bytes -> gunzip(bytes) }                // 二进制帧解码成文本，不设置则忽略二进制帧
     configureRequest = { it.header("X-Token", token) }
     stableAfter = 10.seconds                                  // 连接保持这么久才把重连计数清零
     backpressure = Backpressure.dropOldest()                  // 默认背压策略
-    listener = WsListener { event -> Log.d("WsClient", event.toString()) }
+    listener { event -> Log.d("WsClient", event.toString()) } // 默认不设置，完全静默
 }
 ```
 
 `client.messages` 是全部消息的流，包括不属于任何订阅的（订阅确认、心跳应答）。
 `client.send(text)` 在未连接时返回 false，不会留到重连后补发。
+调用方主动 `disconnect()` 不产生事件，只体现在 `state` 上。
 
 ## 设计说明
 
