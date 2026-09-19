@@ -6,7 +6,7 @@
     <application
         android:name=".SampleApp"
         android:allowBackup="false"
-        android:label="WsClient Sample"
+        android:label="ReSocket Sample"
         android:supportsRtl="true"
         android:theme="@style/Theme.Sample">
         <activity

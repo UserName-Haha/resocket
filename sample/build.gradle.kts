@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.usernamehaha.wsclient.sample"
+    namespace = "io.github.usernamehaha.resocket.sample"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.usernamehaha.wsclient.sample"
+        applicationId = "io.github.usernamehaha.resocket.sample"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -42,7 +42,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":wsclient"))
+    implementation(project(":resocket"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)

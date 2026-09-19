@@ -1,7 +1,7 @@
-# ws-market-client
+# ReSocket
 
-[![CI](https://github.com/UserName-Haha/ws-market-client/actions/workflows/ci.yml/badge.svg)](https://github.com/UserName-Haha/ws-market-client/actions/workflows/ci.yml)
-[![JitPack](https://jitpack.io/v/UserName-Haha/ws-market-client.svg)](https://jitpack.io/#UserName-Haha/ws-market-client)
+[![CI](https://github.com/UserName-Haha/resocket/actions/workflows/ci.yml/badge.svg)](https://github.com/UserName-Haha/resocket/actions/workflows/ci.yml)
+[![JitPack](https://jitpack.io/v/UserName-Haha/resocket.svg)](https://jitpack.io/#UserName-Haha/resocket)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 基于 OkHttp 的 WebSocket 长连接客户端：心跳、退避重连、重连后自动恢复订阅，消息以 Kotlin Flow 暴露，背压策略可配置。
@@ -38,14 +38,14 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.UserName-Haha:ws-market-client:0.1.0")
+    implementation("com.github.UserName-Haha:resocket:0.1.0")
 }
 ```
 
 连接并订阅：
 
 ```kotlin
-val client = WsClient.create(okHttpClient) {
+val client = ReSocket.create(okHttpClient) {
     url("wss://stream.example.com/ws")
     // 从消息里取出 topic，和下面 Subscription 的 topic 对应；订阅确认、心跳应答这类消息返回 null
     topicOf = { message ->
@@ -73,7 +73,7 @@ viewModelScope.launch {
 
 几点说明：
 
-- `WsClient` 跟着进程走，不跟着页面走：在 `Application` 或 DI 容器里创建一次，页面只决定订阅什么。
+- `ReSocket` 跟着进程走，不跟着页面走：在 `Application` 或 DI 容器里创建一次，页面只决定订阅什么。
 - `subscribe` 和 `connect` 的先后顺序无所谓。连上之前登记的订阅会在连上之后按登记顺序发出。
 - 拿到的是原始消息字符串，解析放在 `map` 里做，它运行在收集者的协程上，不会拖慢连接。
 - `topicOf` 每条消息都会调用一次，而且运行在 OkHttp 的读线程上，保持轻量。消息很大、频率很高时，
@@ -84,18 +84,18 @@ viewModelScope.launch {
 库默认不输出任何日志。接入时先把事件打出来看一眼：
 
 ```kotlin
-listener { event -> Log.d("WsClient", event.toString()) }
+listener { event -> Log.d("ReSocket", event.toString()) }
 ```
 
 ```
-D WsClient: 连接 wss://stream.example.com/ws
-D WsClient: 已连接 wss://stream.example.com/ws
-D WsClient: 订阅 btcusdt@trade
-D WsClient: 连接断开 wss://stream.example.com/ws：Failure(SocketException: Socket closed)
-D WsClient: 1.06s 后进行第 1 次重连
-D WsClient: 第 1 次重连 wss://stream.example.com/ws
-D WsClient: 已连接 wss://stream.example.com/ws
-D WsClient: 恢复订阅 btcusdt@trade
+D ReSocket: 连接 wss://stream.example.com/ws
+D ReSocket: 已连接 wss://stream.example.com/ws
+D ReSocket: 订阅 btcusdt@trade
+D ReSocket: 连接断开 wss://stream.example.com/ws：Failure(SocketException: Socket closed)
+D ReSocket: 1.06s 后进行第 1 次重连
+D ReSocket: 第 1 次重连 wss://stream.example.com/ws
+D ReSocket: 已连接 wss://stream.example.com/ws
+D ReSocket: 恢复订阅 btcusdt@trade
 ```
 
 订阅了却收不到消息，多半是 `topicOf` 取出来的值和 `Subscription.topic` 对不上：收集一下 `client.messages` 看看原始消息长什么样。
@@ -136,7 +136,7 @@ client.state.collect { state ->
 | `Backpressure.latest()` | 只保留最新一条 | 最新价这类只关心当前值的数据 |
 | `Backpressure.unbounded()` | 不丢，缓冲区无上限 | IM 消息；收集者长期跟不上会耗尽内存 |
 
-丢弃会通过 `WsEvent.MessagesDropped` 上报，同一个 topic 每秒最多一次。
+丢弃会通过 `ReSocketEvent.MessagesDropped` 上报，同一个 topic 每秒最多一次。
 
 ### 心跳
 
@@ -192,7 +192,7 @@ override fun onStop(owner: LifecycleOwner) = client.disconnect()
 ### 其他配置
 
 ```kotlin
-WsClient.create(okHttpClient) {
+ReSocket.create(okHttpClient) {
     // 每次连接前调用，可以在这里换线路或带上新的签名。autoHost 来自 https://github.com/UserName-Haha/autohost
     url { autoHost.rewrite("wss://ws.example.com/stream") }
     greeting = { listOf(buildLoginMessage()) }                // 每次连上后、恢复订阅之前发送
@@ -200,7 +200,7 @@ WsClient.create(okHttpClient) {
     configureRequest = { it.header("X-Token", token) }
     stableAfter = 10.seconds                                  // 连接保持这么久才把重连计数清零
     backpressure = Backpressure.dropOldest()                  // 默认背压策略
-    listener { event -> Log.d("WsClient", event.toString()) } // 默认不设置，完全静默
+    listener { event -> Log.d("ReSocket", event.toString()) } // 默认不设置，完全静默
 }
 ```
 

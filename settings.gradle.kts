@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ws-market-client"
-include(":wsclient")
+rootProject.name = "resocket"
+include(":resocket")
 include(":sample")

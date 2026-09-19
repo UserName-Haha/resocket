@@ -1,4 +1,4 @@
 jdk:
   - openjdk17
 install:
-  - ./gradlew :wsclient:publishToMavenLocal
+  - ./gradlew :resocket:publishToMavenLocal

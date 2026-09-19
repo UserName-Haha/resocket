@@ -1,4 +1,4 @@
-# ws-market-client 设计说明
+# ReSocket 设计说明
 
 ## 要解决的问题
 
@@ -23,7 +23,7 @@
 ## 公开 API
 
 ```kotlin
-public interface WsClient : Closeable {
+public interface ReSocket : Closeable {
     public val state: StateFlow<ConnectionState>
     public val messages: Flow<String>
 

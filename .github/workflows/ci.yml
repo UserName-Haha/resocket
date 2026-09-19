@@ -22,9 +22,9 @@ jobs:
       - name: API 兼容性检查
         run: ./gradlew apiCheck
       - name: Lint
-        run: ./gradlew :wsclient:lintRelease
+        run: ./gradlew :resocket:lintRelease
       - name: 单元测试
-        run: ./gradlew :wsclient:testDebugUnitTest
+        run: ./gradlew :resocket:testDebugUnitTest
       - name: 构建开启 R8 的 sample
         run: ./gradlew :sample:assembleRelease
       - uses: actions/upload-artifact@v4
